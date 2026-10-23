@@ -1,0 +1,34 @@
+<Window x:Class="NetworkAccessManager.App.Views.DetailsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="选中项完整详情"
+        Width="820"
+        Height="680"
+        MinWidth="640"
+        MinHeight="480"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Margin="0,0,0,8">
+            <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Text="此窗口显示当前选中项的实际采集字段、规则和任务状态；未知字段会明确标出。" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,3,0,0" />
+        </StackPanel>
+        <Border Grid.Row="1" Style="{StaticResource DialogSectionStyle}" Padding="0">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <TextBlock Text="{Binding DetailsText}" TextWrapping="Wrap" FontFamily="Consolas, Microsoft YaHei UI" FontSize="11.5" Padding="10" />
+            </ScrollViewer>
+        </Border>
+        <Grid Grid.Row="2" Margin="0,9,0,0">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="复制全部" Style="{StaticResource DialogButtonStyle}" Click="Copy_Click" />
+                <Button Content="在资源管理器中定位" Style="{StaticResource DialogButtonStyle}" Click="OpenPath_Click" IsEnabled="{Binding HasPath}" />
+            </StackPanel>
+            <Button HorizontalAlignment="Right" Content="关闭" Style="{StaticResource PrimaryDialogButtonStyle}" IsCancel="True" IsDefault="True" Click="Close_Click" />
+        </Grid>
+    </Grid>
+</Window>

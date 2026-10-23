@@ -1,0 +1,73 @@
+DATA_DIR=<workspace>\artifacts\system-verifier
+IS_ADMIN=True USER=NT AUTHORITY\SYSTEM SID=S-1-5-18
+PROCESS=C:\Program Files\dotnet\dotnet.exe
+TIME=2026-10-23T20:07:54.3686067+08:00
+FIREWALL_AVAILABLE=True PROFILE_PROTECTED=True CAN_READ=True ACCESS_LIMITED=False
+FIREWALL_STATUS=Windows 防火墙可用 · 当前配置文件已启用 ERROR=
+APP_EXECUTABLE=<workspace>\src\NetworkAccessManager.App\bin\Debug\net10.0-windows\NetworkAccessManager.exe EXISTS=True
+TEST_PROGRAM=C:\Windows\system32\notepad.exe
+TEST_NETWORK=203.0.113.0/24
+BLOCK_PROGRAM success=True outcome=Success message=已创建并验证 1 条程序阻断规则（出站）。规则按可执行文件路径生效，可能影响同一程序启动的全部实例。
+BLOCK_PROGRAM_RULE_IDS=b03db34bd9c04d509c4af025d28d523b
+BLOCK_NETWORK success=True outcome=Success message=已创建并验证 1 条网络目标阻断规则（出站）。规则会影响访问该地址范围的全部应用。
+BLOCK_NETWORK_RULE_IDS=02e15ccf7f164766b4cba60ed6542bec
+STATE_ACTIVE_RULES=2
+RULE record=b03db34bd9c04d509c4af025d28d523b name=NAM_b03db34bd9c04d509c4af025d28d523b_OUT kind=Program target=C:\Windows\system32\notepad.exe direction=Outbound verified=2026-10-23T12:07:54.5976792+00:00
+RULE record=02e15ccf7f164766b4cba60ed6542bec name=NAM_02e15ccf7f164766b4cba60ed6542bec_OUT kind=NetworkAddress target=203.0.113.0/24 direction=Outbound verified=2026-10-23T12:07:54.9183827+00:00
+INSPECT rule=b03db34bd9c04d509c4af025d28d523b state=Verified exists=True enabled=True identity=True direction=2 application=C:\Windows\system32\notepad.exe remote=* detail=规则存在，属性与本工具登记一致。
+INSPECT rule=02e15ccf7f164766b4cba60ed6542bec state=Verified exists=True enabled=True identity=True direction=2 application= remote=203.0.113.0/255.255.255.0 detail=规则存在，属性与本工具登记一致。
+ORPHANS_WHILE_ACTIVE=
+NETSH_BEGIN NAM_b03db34bd9c04d509c4af025d28d523b_OUT
+
+规则名称:                             NAM_b03db34bd9c04d509c4af025d28d523b_OUT
+----------------------------------------------------------------------
+已启用:                               是
+方向:                                 出
+配置文件:                             域,专用,公用
+分组:                                 Network Access Manager 受管规则
+本地 IP:                              任何
+远程 IP:                              任何
+协议:                                 任何
+边缘遍历:                             否
+操作:                                 阻止
+确定。
+NETSH_END NAM_b03db34bd9c04d509c4af025d28d523b_OUT
+NETSH_BEGIN NAM_02e15ccf7f164766b4cba60ed6542bec_OUT
+
+规则名称:                             NAM_02e15ccf7f164766b4cba60ed6542bec_OUT
+----------------------------------------------------------------------
+已启用:                               是
+方向:                                 出
+配置文件:                             域,专用,公用
+分组:                                 Network Access Manager 受管规则
+本地 IP:                              任何
+远程 IP:                              203.0.113.0/24
+协议:                                 任何
+边缘遍历:                             否
+操作:                                 阻止
+确定。
+NETSH_END NAM_02e15ccf7f164766b4cba60ed6542bec_OUT
+UNBLOCK_PROGRAM success=True outcome=Success message=已解除本工具创建的 1 条阻断规则。
+UNBLOCK_NETWORK success=True outcome=Success message=已解除本工具创建的 1 条阻断规则。
+STATE_ACTIVE_AFTER_UNBLOCK=0
+ORPHANS_AFTER_UNBLOCK=
+HISTORY_EVENTS=4
+EVENT 2026-10-23T12:07:54.7474456+00:00 outcome=Success op=立即禁止 message=已创建并验证 1 条程序阻断规则（出站）。规则按可执行文件路径生效，可能影响同一程序启动的全部实例。
+EVENT 2026-10-23T12:07:54.9800881+00:00 outcome=Success op=立即禁止 message=已创建并验证 1 条网络目标阻断规则（出站）。规则会影响访问该地址范围的全部应用。
+EVENT 2026-10-23T12:07:55.3339795+00:00 outcome=Success op=解除禁止 message=已解除本工具创建的 1 条阻断规则。
+EVENT 2026-10-23T12:07:55.4574900+00:00 outcome=Success op=解除禁止 message=已解除本工具创建的 1 条阻断规则。
+SCHEDULER_CREATE name=NAM_Task_de3e76496c9d499a9bbf4d4b882a2be5 action=<workspace>\src\NetworkAccessManager.App\bin\Debug\net10.0-windows\NetworkAccessManager.exe --execute-task=de3e76496c9d499a9bbf4d4b882a2be5
+SCHEDULER_REGISTERED exists=True accessible=True detail=任务存在。 error=
+SCHEDULER_AFTER_DELETE exists=False
+SCHEDULER_RESULT=PASS
+WORKFLOW DelayedBlock PASS schedule=True pending=Pending os=True exec=True final=Succeeded rules=1 osAfter=False message=已创建延迟禁止任务。将在 1 分钟后（2026-10-23 20:08:55）禁止该对象的仅出站访问。若电脑休眠或关机，系统会在恢复并登录后补执行，实际执行时间将如实记入历史。; execMessage=延迟禁止已执行并记录。
+WORKFLOW DelayedUnblock PASS block=True schedule=True os=True exec=True final=Succeeded active=0 osAfter=False message=已按计划解除本工具创建的 1 条规则。实际执行时间 2026-10-23 20:07:56。
+WORKFLOW TimedBlock PASS schedule=True pending=Pending rules=1 os=True exec=True final=Succeeded activeAfter=0 osAfter=False message=已按计划解除本工具创建的 1 条规则。实际执行时间 2026-10-23 20:07:57。
+WORKFLOW CancelDelayedBlock PASS schedule=True os=True cancel=True final=Cancelled osAfter=False message=定时任务已取消，后续不会被系统计划任务执行。
+WORKFLOW CancelTimedBlockWithUnblock PASS schedule=True rulesBefore=1 os=True cancel=True final=Cancelled activeAfter=0 osAfter=False message=定时任务已取消，后续不会被系统计划任务执行。 已解除 1 条规则，0 条操作时已不存在。
+WORKFLOW_FINAL pending=0 activeRules=0 orphans=
+FIREWALL_RESULT=PASS
+WORKFLOWS_RESULT=PASS
+RESULT=PASS
+CLEANUP_ORPHANS=
+COMPLETED=2026-10-23T20:07:57.9002918+08:00

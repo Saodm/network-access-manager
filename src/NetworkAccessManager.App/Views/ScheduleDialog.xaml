@@ -1,0 +1,156 @@
+<Window x:Class="NetworkAccessManager.App.Views.ScheduleDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="延迟禁止 / 延迟解除 / 限时禁止"
+        Width="900"
+        Height="700"
+        MinWidth="820"
+        MinHeight="620"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,8">
+            <TextBlock Text="安排定时网络控制" FontSize="16" FontWeight="SemiBold" />
+            <TextBlock x:Name="HeaderSubtitle" Text="三种模式的作用时机不同，请先确认当前对象状态，再选择模式和时间。"
+                       Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                <Border Style="{StaticResource DialogSectionStyle}">
+                    <StackPanel>
+                        <TextBlock Text="选择定时模式" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <RadioButton x:Name="DelayedBlockRadio" GroupName="ScheduleMode" IsChecked="True" Checked="Mode_Checked">
+                            <StackPanel>
+                                <TextBlock Text="延迟禁止（到时才阻断）" FontWeight="SemiBold" />
+                                <TextBlock Text="等待指定时间，倒计时结束后才创建阻断规则。现在不会断网，也不会自动恢复。"
+                                           Foreground="{StaticResource MutedTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,1,0,7" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="DelayedUnblockRadio" GroupName="ScheduleMode" Checked="Mode_Checked">
+                            <StackPanel>
+                                <TextBlock Text="延迟解除禁止（到时恢复）" FontWeight="SemiBold" />
+                                <TextBlock Text="仅适用于当前已有本工具阻断规则的对象。等待指定时间后解除这些规则。"
+                                           Foreground="{StaticResource MutedTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,1,0,7" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="TimedBlockRadio" GroupName="ScheduleMode" Checked="Mode_Checked">
+                            <StackPanel>
+                                <TextBlock Text="限时禁止（现在阻断，到时自动恢复）" FontWeight="SemiBold" />
+                                <TextBlock Text="确认后立即创建阻断规则，并在指定时间后自动解除本工具创建的相应规则。适合临时断网。"
+                                           Foreground="{StaticResource MutedTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,1,0,0" />
+                            </StackPanel>
+                        </RadioButton>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="TypePanel" Style="{StaticResource DialogSectionStyle}">
+                    <StackPanel>
+                        <TextBlock Text="2. 选择作用方式" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton x:Name="ProgramKindRadio" GroupName="ScheduleKind" Content="按程序路径" IsChecked="True" Checked="Kind_Checked" Margin="0,0,22,0" />
+                            <RadioButton x:Name="NetworkKindRadio" GroupName="ScheduleKind" Content="按远程 IP 目标" Checked="Kind_Checked" />
+                        </StackPanel>
+                        <TextBlock Text="程序方式影响同一可执行文件的全部实例；网络目标方式影响所有访问该地址范围的应用程序。"
+                                   Foreground="{StaticResource MutedTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource DialogSectionStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <StackPanel x:Name="DirectionPanel">
+                            <TextBlock Text="阻断方向（延迟解除模式使用现有规则方向）" FontWeight="SemiBold" Margin="0,0,0,5" />
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton x:Name="OutboundRadio" Content="仅出站（推荐）" GroupName="ScheduleDirection" IsChecked="True" Checked="Direction_Checked" Margin="0,0,18,0" />
+                                <RadioButton x:Name="InboundRadio" Content="仅入站" GroupName="ScheduleDirection" Checked="Direction_Checked" Margin="0,0,18,0" />
+                                <RadioButton x:Name="BothRadio" Content="入站和出站" GroupName="ScheduleDirection" Checked="Direction_Checked" />
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Margin="0,8,0,0">
+                            <TextBlock Text="延迟时间（分钟）" FontWeight="SemiBold" Margin="0,0,0,6" />
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="1 分钟" Style="{StaticResource ToolbarButtonStyle}" Tag="1" Click="QuickMinutes_Click" Margin="0,0,6,0" />
+                                <Button Content="5 分钟" Style="{StaticResource ToolbarButtonStyle}" Tag="5" Click="QuickMinutes_Click" Margin="0,0,6,0" />
+                                <Button Content="10 分钟" Style="{StaticResource ToolbarButtonStyle}" Tag="10" Click="QuickMinutes_Click" Margin="0,0,6,0" />
+                                <Button Content="30 分钟" Style="{StaticResource ToolbarButtonStyle}" Tag="30" Click="QuickMinutes_Click" Margin="0,0,6,0" />
+                                <Button Content="60 分钟" Style="{StaticResource ToolbarButtonStyle}" Tag="60" Click="QuickMinutes_Click" Margin="0,0,12,0" />
+                                <TextBox x:Name="MinutesTextBox" Width="76" Text="10" TextChanged="Minutes_TextChanged" />
+                                <TextBlock Text="分钟" VerticalAlignment="Center" Margin="6,0,0,0" />
+                            </StackPanel>
+                            <TextBlock x:Name="TimeErrorText" Foreground="{StaticResource RedBrush}" FontSize="11" Margin="0,4,0,0" />
+                            <TextBlock x:Name="PreviewTimeText" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource DialogSectionStyle}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0" Margin="0,0,0,5">
+                            <TextBlock Text="将安排的对象" FontWeight="SemiBold" />
+                            <TextBlock x:Name="TargetListSummary" HorizontalAlignment="Right" Foreground="{StaticResource MutedTextBrush}" FontSize="11" />
+                        </Grid>
+                        <DataGrid x:Name="TargetGrid" Grid.Row="1" Style="{StaticResource DataGridStyle}" Height="190" MinHeight="130" IsReadOnly="True" SelectionMode="Single">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="模式适用" Binding="{Binding EligibilityText}" Width="135" ElementStyle="{StaticResource GridCellTextStyle}" />
+                                <DataGridTextColumn Header="对象" Binding="{Binding Display}" Width="190" ElementStyle="{StaticResource GridCellTextStyle}" />
+                                <DataGridTextColumn Header="当前状态" Binding="{Binding CurrentStateText}" Width="210" ElementStyle="{StaticResource GridCellTextStyle}" />
+                                <DataGridTextColumn Header="说明 / 不可用原因" Binding="{Binding Detail}" Width="*" MinWidth="230" ElementStyle="{StaticResource GridCellTextStyle}" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Border>
+
+                <Border x:Name="RiskPanel" Style="{StaticResource DialogSectionStyle}" Background="{StaticResource WarningBackgroundBrush}" BorderBrush="{StaticResource WarningBorderBrush}" Visibility="Collapsed">
+                    <StackPanel>
+                        <TextBlock Text="高风险提示" FontWeight="SemiBold" Foreground="{StaticResource OrangeBrush}" />
+                        <TextBlock x:Name="RiskText" TextWrapping="Wrap" Margin="0,4,0,6" Foreground="{StaticResource OrangeBrush}" FontSize="11" />
+                        <CheckBox x:Name="HighRiskAckCheckBox" Content="我已了解风险，确认继续安排" Checked="Ack_Changed" Unchecked="Ack_Changed" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource DialogSectionStyle}" Background="#F8FAFC">
+                    <StackPanel>
+                        <TextBlock Text="任务会交给 Windows 任务计划程序执行，并持久化到本工具数据目录。关闭本工具或重启电脑后任务仍保留；若电脑休眠/关机错过时间，Windows 会在恢复并登录后补执行，实际执行时间会如实记录。"
+                                   TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" FontSize="11" />
+                        <TextBlock Text="安排任务本身需管理员授权；执行时由当前用户的任务计划程序任务调用一次性辅助进程。若当前账户不是管理员，计划执行可能因缺少管理员权限而失败，失败原因会写入历史。"
+                                   TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,5,0,0" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid Grid.Row="2" Margin="0,9,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Border Grid.Row="0" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="0,8,0,5">
+                <StackPanel>
+                    <TextBlock x:Name="SummaryText" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock x:Name="ScopeSummaryText" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+            <Grid Grid.Row="1" Margin="0,3,0,0">
+                <TextBlock x:Name="FooterHint" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" FontSize="11" TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="取消" Style="{StaticResource DialogButtonStyle}" IsCancel="True" Click="Cancel_Click" />
+                    <Button x:Name="ConfirmButton" Content="确认安排定时任务" Style="{StaticResource PrimaryDialogButtonStyle}" MinWidth="150" IsDefault="True" Click="Confirm_Click" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

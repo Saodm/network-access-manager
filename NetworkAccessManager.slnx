@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/NetworkAccessManager.App/NetworkAccessManager.App.csproj" />
+    <Project Path="src/NetworkAccessManager.Core/NetworkAccessManager.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NetworkAccessManager.Tests/NetworkAccessManager.Tests.csproj" />
+  </Folder>
+</Solution>

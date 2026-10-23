@@ -1,0 +1,77 @@
+<Window x:Class="NetworkAccessManager.App.Views.NetworkTargetDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="按网络目标建立阻断规则"
+        Width="660"
+        Height="560"
+        MinWidth="600"
+        MinHeight="500"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,9">
+            <TextBlock Text="按网络目标建立阻断规则" FontSize="16" FontWeight="SemiBold" />
+            <TextBlock Text="支持单个 IPv4、IPv6 地址或合法 CIDR 网段。域名、端口、多个地址和地址范围语法不会被接受。"
+                       Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <Border Style="{StaticResource DialogSectionStyle}">
+                    <StackPanel>
+                        <TextBlock Text="目标地址 / 网段" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <TextBox x:Name="TargetTextBox" TextChanged="Target_TextChanged" ToolTip="例如 203.0.113.10、2001:db8::1 或 203.0.113.0/24" />
+                        <TextBlock Text="示例：203.0.113.10 · 2001:db8::1 · 192.0.2.0/24 · 2001:db8::/32"
+                                   Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,4,0,0" />
+                        <TextBlock x:Name="ValidationText" Foreground="{StaticResource RedBrush}" FontSize="11" Margin="0,5,0,0" TextWrapping="Wrap" />
+                        <TextBlock x:Name="NormalizedText" FontWeight="SemiBold" Margin="0,5,0,0" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource DialogSectionStyle}">
+                    <StackPanel>
+                        <TextBlock Text="作用方向" FontWeight="SemiBold" Margin="0,0,0,5" />
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton x:Name="OutboundRadio" Content="仅出站（推荐）" GroupName="Direction" IsChecked="True" Checked="Direction_Checked" Margin="0,0,18,0" />
+                            <RadioButton x:Name="InboundRadio" Content="仅入站" GroupName="Direction" Checked="Direction_Checked" Margin="0,0,18,0" />
+                            <RadioButton x:Name="BothRadio" Content="入站和出站" GroupName="Direction" Checked="Direction_Checked" />
+                        </StackPanel>
+                        <TextBlock Text="该规则按目标地址范围生效，会影响所有访问该目标的应用程序，而不只某个进程或连接；端口不限制。"
+                                   Foreground="{StaticResource MutedTextBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="RiskPanel" Style="{StaticResource DialogSectionStyle}" Background="{StaticResource WarningBackgroundBrush}" BorderBrush="{StaticResource WarningBorderBrush}" Visibility="Collapsed">
+                    <StackPanel>
+                        <TextBlock Text="高影响范围" FontWeight="SemiBold" Foreground="{StaticResource OrangeBrush}" />
+                        <TextBlock x:Name="RiskText" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource OrangeBrush}" Margin="0,4,0,6" />
+                        <CheckBox x:Name="HighRiskAckCheckBox" Content="我已了解该地址范围的高影响，确认继续" Checked="Ack_Changed" Unchecked="Ack_Changed" />
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="FirewallPanel" Style="{StaticResource DialogSectionStyle}" Background="#FFF8E8" BorderBrush="{StaticResource WarningBorderBrush}">
+                    <TextBlock x:Name="FirewallText" TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource OrangeBrush}" />
+                </Border>
+
+                <Border Style="{StaticResource DialogSectionStyle}" Background="#F8FAFC">
+                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="{StaticResource MutedTextBrush}"
+                               Text="确认后会通过标准 UAC 请求管理员权限，创建 Windows 防火墙规则并核对实际属性。如果你取消授权，不会创建任何规则。创建规则不会修改 Windows 防火墙全局默认策略，也不会关闭防火墙。" />
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid Grid.Row="2" Margin="0,9,0,0">
+            <TextBlock x:Name="SummaryText" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" FontSize="11" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="取消" Style="{StaticResource DialogButtonStyle}" IsCancel="True" Click="Cancel_Click" />
+                <Button x:Name="ConfirmButton" Content="创建目标阻断规则" Style="{StaticResource PrimaryDialogButtonStyle}" MinWidth="146" IsDefault="True" IsEnabled="False" Click="Confirm_Click" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

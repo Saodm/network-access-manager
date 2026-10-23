@@ -1,0 +1,89 @@
+<Window x:Class="NetworkAccessManager.App.Views.UnblockDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="解除本工具阻断规则"
+        Width="820"
+        Height="620"
+        MinWidth="720"
+        MinHeight="520"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,8">
+            <TextBlock Text="解除本工具创建的阻断规则" FontSize="16" FontWeight="SemiBold" />
+            <TextBlock Text="只删除本工具登记且可核对身份的受管规则，不会清除其他软件或系统规则，也不会创建“允许”规则来覆盖其他安全策略。"
+                       Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <Border Grid.Row="1" Style="{StaticResource DialogSectionStyle}" Margin="0,0,0,8">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0" Margin="0,0,0,5">
+                    <TextBlock Text="将要解除的目标" FontWeight="SemiBold" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="全选" Style="{StaticResource LinkButtonStyle}" Click="SelectAll_Click" />
+                        <TextBlock Text="  " />
+                        <Button Content="全不选" Style="{StaticResource LinkButtonStyle}" Click="SelectNone_Click" />
+                    </StackPanel>
+                </Grid>
+                <TextBlock Grid.Row="1" x:Name="WarningText" Foreground="{StaticResource OrangeBrush}" FontSize="11" Margin="0,0,0,6" TextWrapping="Wrap" />
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl x:Name="TargetList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{StaticResource LightBorderBrush}" BorderThickness="0,0,0,1" Padding="4,7">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="28" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="160" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Top" Checked="Choice_Changed" Unchecked="Choice_Changed" />
+                                        <StackPanel Grid.Column="1">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding KindText}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" Margin="0,0,7,0" />
+                                                <TextBlock Text="{Binding Display}" FontWeight="SemiBold" />
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,2,0,0" />
+                                            <TextBlock Text="{Binding RulesSummary}" TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Top">
+                                            <TextBlock Text="{Binding DirectionText}" Foreground="{StaticResource TextBrush}" FontSize="11" />
+                                            <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" FontSize="11" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="3" Text="{Binding RuleCountText}" Foreground="{StaticResource MutedTextBrush}" FontSize="11" VerticalAlignment="Top" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="2" Background="{StaticResource WarningBackgroundBrush}" BorderBrush="{StaticResource WarningBorderBrush}" BorderThickness="1" Padding="9,6" Margin="0,0,0,9">
+            <TextBlock Text="解除后，如果其他安全策略仍然阻止对应流量，网络访问可能仍不可用；本工具不会擅自放宽这些策略。若该目标有尚未执行的定时任务，相关任务会一并取消。"
+                       Foreground="{StaticResource OrangeBrush}" FontSize="11" TextWrapping="Wrap" />
+        </Border>
+
+        <Grid Grid.Row="3">
+            <TextBlock x:Name="SummaryText" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" FontSize="11" TextTrimming="CharacterEllipsis" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="取消" Style="{StaticResource DialogButtonStyle}" IsCancel="True" Click="Cancel_Click" />
+                <Button x:Name="ConfirmButton" Content="解除选中目标的规则" Style="{StaticResource PrimaryDialogButtonStyle}" MinWidth="160" IsDefault="True" Click="Confirm_Click" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

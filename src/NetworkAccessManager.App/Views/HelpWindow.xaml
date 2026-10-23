@@ -1,0 +1,53 @@
+<Window x:Class="NetworkAccessManager.App.Views.HelpWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="帮助与说明"
+        Width="720"
+        Height="700"
+        MinWidth="600"
+        MinHeight="500"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Margin="0,0,0,8">
+            <TextBlock Text="帮助与说明" FontSize="16" FontWeight="SemiBold" />
+            <TextBlock x:Name="VersionText" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,3,0,0" />
+        </StackPanel>
+        <Border Grid.Row="1" Style="{StaticResource DialogSectionStyle}" Padding="14">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock Text="快速使用" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,5" />
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,12" Text="1. 在左侧“应用进程”或“网络连接”中选择对象；使用 Ctrl / Shift 多选。&#10;2. “立即禁止”用于立即创建 Windows 防火墙阻断规则；“延迟禁止 / 解除”可设置延迟禁止、延迟解除或限时禁止。&#10;3. “解除禁止”只解除本工具登记的规则；“任务与操作历史”可查看定时任务、规则状态、实际执行时间和历史。&#10;4. 普通权限即可查看信息。修改防火墙和计划任务时，会通过标准 UAC 请求一次性管理员授权。" />
+
+                    <TextBlock Text="规则的真实作用范围" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,5" />
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,12" Text="• 程序规则按可执行文件完整路径生效，不只影响表格中选中的一个 PID，并且对本机所有用户和所有网络配置文件生效。&#10;• 网络目标规则按远程 IP 地址或 CIDR 网段生效，会影响所有访问该目标地址的程序；不限制端口。&#10;• 本工具不会通过“清空所有规则”、修改全局默认策略或关闭 Windows 防火墙来恢复网络。&#10;• 如果其他安全软件、组策略或系统规则仍然阻断相应流量，解除本工具规则后网络也可能仍不可用。" />
+
+                    <TextBlock Text="定时任务与恢复" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,5" />
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,12" Text="• 定时任务交给 Windows 任务计划程序，并持久化到数据目录。关闭主窗口、重新打开程序或重启电脑后仍可恢复任务状态。&#10;• 如果电脑在计划时间休眠或关机，Windows 任务计划程序会在恢复并登录后尝试补执行；本工具会记录实际执行时间，不会伪装成按时执行。&#10;• 取消任务时，本工具先把逻辑状态设为已取消，再尝试删除系统计划任务。即使系统任务记录删除失败，后续触发也不会再修改规则；界面会明确提示。&#10;• 当前账户若不是管理员，计划任务在无人值守时可能因无法获得管理员权限而失败，失败会写入历史。请以管理员账户使用需要后台生效的定时操作。" />
+
+                    <TextBlock Text="权限与安全" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,5" />
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,12" Text="• 主界面以 asInvoker 权限启动，不会默认以管理员或 SYSTEM 身份常驻。&#10;• 所有规则修改都通过一次性提权辅助程序，使用标准 Windows UAC；不绕过 UAC、不保存密码。&#10;• 删除规则前会核对本工具的分组、规则名和身份元数据；同名但身份不符的规则不会被删除。&#10;• 关键系统组件和承载多个服务的 svchost 不允许按程序整体阻断；高风险操作需要额外确认。" />
+
+                    <TextBlock Text="能力范围与已知限制" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,5" />
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,12" Text="• 当前只支持单个 IPv4 / IPv6 地址和 CIDR 网段，不支持域名、端口范围或端口级目标规则。域名解析后可能变化，不能可靠代表持续阻断域名，因此没有把域名阻断宣称为有效功能。&#10;• 网络连接来自 Windows TCP/UDP 表；无法关联到进程的端点会显示为“未知进程”。不展示模拟连接或虚构流量。&#10;• Windows 防火墙已建立的连接可能不会立即断开。程序规则不会终止进程，也不会影响进程的其他本地行为。&#10;• 防火墙规则读取/修改状态可能受权限、系统策略或其他安全软件影响；界面会显示“未知”“不一致”或具体错误，而不是假定成功。&#10;• 非管理员账户的定时任务执行受 UAC 和任务计划程序限制。关键系统组件的保护是一种保守策略，不等于完整的安全评估。" />
+
+                    <TextBlock Text="数据与日志" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,5" />
+                    <TextBlock x:Name="DataText" TextWrapping="Wrap" FontFamily="Consolas, Microsoft YaHei UI" FontSize="11" />
+                    <TextBlock x:Name="LogText" TextWrapping="Wrap" FontFamily="Consolas, Microsoft YaHei UI" FontSize="11" Margin="0,2,0,0" />
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+        <Grid Grid.Row="2" Margin="0,9,0,0">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="打开数据目录" Style="{StaticResource DialogButtonStyle}" Click="OpenData_Click" />
+                <Button Content="打开日志目录" Style="{StaticResource DialogButtonStyle}" Click="OpenLogs_Click" />
+            </StackPanel>
+            <Button HorizontalAlignment="Right" Content="关闭" Style="{StaticResource PrimaryDialogButtonStyle}" IsDefault="True" IsCancel="True" Click="Close_Click" />
+        </Grid>
+    </Grid>
+</Window>

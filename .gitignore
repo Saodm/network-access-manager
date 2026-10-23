@@ -1,0 +1,15 @@
+bin/
+obj/
+dist/
+artifacts/
+src/**/data/
+data/
+*.user
+# These screenshots contain machine-specific executable paths or live network endpoints.
+# They remain in local build artifacts but are not published in the public repository.
+docs/screenshots/block-dialog.png
+docs/screenshots/connection-tab.png
+docs/screenshots/details.png
+docs/screenshots/process-selected.png
+docs/screenshots/schedule-dialog.png
+docs/screenshots/settings.png
