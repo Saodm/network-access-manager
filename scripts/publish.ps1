@@ -12,6 +12,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Publish failed." }
 
     Copy-Item -LiteralPath (Join-Path $root "README.md") -Destination (Join-Path $out "README.md") -Force
+    Copy-Item -LiteralPath (Join-Path $root "CHANGELOG.md") -Destination (Join-Path $out "CHANGELOG.md") -Force
     New-Item -ItemType Directory -Path (Join-Path $out "docs") -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $root "docs\VERIFICATION.md") -Destination (Join-Path $out "docs\VERIFICATION.md") -Force
     Copy-Item -LiteralPath (Join-Path $root "docs\verification-system-verifier.txt") -Destination (Join-Path $out "docs\verification-system-verifier.txt") -Force

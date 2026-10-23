@@ -191,7 +191,10 @@ public sealed class HelperHost
         _log = log;
     }
 
-    public async Task<int> RunElevatedRequestAsync(string encodedRequest, CancellationToken cancellationToken = default)
+    public async Task<int> RunElevatedRequestAsync(
+        string encodedRequest,
+        CancellationToken cancellationToken = default,
+        string source = "UAC 辅助进程")
     {
         ElevatedRequest request;
         try
@@ -221,7 +224,8 @@ public sealed class HelperHost
             if (!string.Equals(request.UserSid, WindowsPrivilege.CurrentUserSid(), StringComparison.OrdinalIgnoreCase))
                 throw new UnauthorizedAccessException("当前提权进程的用户身份与发起请求的用户不一致，已拒绝执行。");
             if (!WindowsPrivilege.IsAdministrator())
-                throw new UnauthorizedAccessException("没有得到管理员权限，已拒绝执行。");
+                throw new UnauthorizedAccessException(
+                    "没有得到管理员权限，已拒绝执行。当前辅助进程没有被 Windows 提升为管理员。请先完全关闭本工具的所有窗口，再右键 NetworkAccessManager.exe 选择“以管理员身份运行”；启动后顶部应显示“已取得管理员权限”。若没有出现 UAC 提示，请检查 Windows UAC 设置或安全软件。未修改任何规则。");
             if (request.Actions.Count == 0)
                 throw new InvalidOperationException("请求中没有操作项。");
             if (request.Actions.Count > NetworkControlService.MaxActionsPerRequest)
@@ -242,7 +246,7 @@ public sealed class HelperHost
                 ElevatedActionResult result;
                 try
                 {
-                    result = await service.RunActionAsync(action, "UAC 辅助进程", request.RequestId, cancellationToken).ConfigureAwait(false);
+                    result = await service.RunActionAsync(action, source, request.RequestId, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {

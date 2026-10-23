@@ -26,7 +26,7 @@ public partial class SettingsWindow : Window
         DataPathText.Text = paths.RootDirectory;
         LogPathText.Text = paths.LogsDirectory;
         AboutText.Text = $"网络访问管理器 {version} · Windows 防火墙 + 任务计划程序\n" +
-                         "界面普通权限运行，修改规则时按需 UAC；不安装内核驱动、不保存管理员密码。\n" +
+                         "界面默认以普通权限运行，修改规则时按需 UAC；若主动以管理员身份启动，则直接复用当前管理员令牌。不安装内核驱动、不保存管理员密码。\n" +
                          "制定规则前请阅读“帮助”中的作用范围和权限说明。";
         StorageHintText.Text = "本程序采用安装目录旁的 data 目录，便于便携使用和审计。若安装到受保护的系统目录，普通权限将无法写入历史和设置，请安装到当前用户可写的位置。";
         var intervals = AllowedIntervals

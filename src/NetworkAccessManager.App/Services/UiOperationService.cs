@@ -47,6 +47,7 @@ public sealed class UiOperationService
     private readonly IAppLog _log;
     private readonly StateRepository _store;
     private readonly ElevationClient _client;
+    private readonly string _executablePath;
 
     public UiOperationService(AppPaths paths, IAppLog log)
     {
@@ -54,9 +55,16 @@ public sealed class UiOperationService
         _log = log;
         _store = new StateRepository(paths);
         var executable = Environment.ProcessPath;
-        if (string.IsNullOrWhiteSpace(executable))
-            executable = Path.Combine(AppContext.BaseDirectory, "NetworkAccessManager.exe");
-        _client = new ElevationClient(paths, executable, log);
+        if (string.IsNullOrWhiteSpace(executable) ||
+            string.Equals(Path.GetFileName(executable), "dotnet.exe", StringComparison.OrdinalIgnoreCase))
+        {
+            var appHost = Path.Combine(AppContext.BaseDirectory, "NetworkAccessManager.exe");
+            if (File.Exists(appHost)) executable = appHost;
+        }
+        _executablePath = string.IsNullOrWhiteSpace(executable)
+            ? Path.Combine(AppContext.BaseDirectory, "NetworkAccessManager.exe")
+            : executable;
+        _client = new ElevationClient(paths, _executablePath, log);
     }
 
     public async Task<UiOperationOutcome> ExecuteAsync(
@@ -82,7 +90,7 @@ public sealed class UiOperationService
             Actions = actions.ToList()
         };
 
-        var invocation = await _client.InvokeAsync(request, cancellationToken).ConfigureAwait(false);
+        var invocation = await InvokeAsync(request, cancellationToken).ConfigureAwait(false);
         var result = new UiOperationOutcome
         {
             Request = request,
@@ -140,6 +148,43 @@ public sealed class UiOperationService
                 ? string.Join(Environment.NewLine, summaryLines)
                 : "管理员辅助进程返回了空结果。"
         };
+    }
+
+    private async Task<ElevationInvocationResult> InvokeAsync(
+        ElevatedRequest request,
+        CancellationToken cancellationToken)
+    {
+        // If the user deliberately started the desktop UI with an elevated
+        // token, reuse it. Launching a second elevated instance would require
+        // another UAC prompt and can fail on systems where the first instance
+        // still holds the single-instance mutex.
+        if (!WindowsPrivilege.IsAdministrator())
+            return await _client.InvokeAsync(request, cancellationToken).ConfigureAwait(false);
+
+        _log.Info("UI", "当前桌面窗口已具有管理员权限，直接在进程内执行操作，不再请求第二次 UAC。");
+        try
+        {
+            var host = new HelperHost(_paths, _executablePath, _log);
+            var encoded = HelperRequestCodec.Encode(request);
+            var exitCode = await host.RunElevatedRequestAsync(encoded, cancellationToken, "桌面程序（已提权）").ConfigureAwait(false);
+            var response = HelperRequestCodec.TryReadResult(_paths, request.RequestId);
+            return new ElevationInvocationResult
+            {
+                Started = true,
+                Response = response,
+                ProcessExitCode = exitCode,
+                Error = response is null ? "当前管理员界面没有生成可验证的操作结果文件。" : null
+            };
+        }
+        catch (Exception ex)
+        {
+            _log.Error("UI", "在已提权界面内执行操作失败", ex);
+            return new ElevationInvocationResult
+            {
+                Started = false,
+                Error = $"在已提权界面内执行操作失败：{ex.Message}"
+            };
+        }
     }
 
     private void RecordLocalFailure(

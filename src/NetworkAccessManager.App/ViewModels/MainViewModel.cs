@@ -154,8 +154,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         PrivilegeStatusText = IsElevated ? "已取得管理员权限" : "普通权限";
         PrivilegeBrush = IsElevated ? UiBrushes.Green : UiBrushes.Blue;
         PrivilegeHint = IsElevated
-            ? "当前窗口已具有管理员权限；规则操作仍通过独立辅助进程完成。"
-            : "当前窗口是普通权限。查看进程/连接不需要管理员权限；创建、解除规则和设置定时任务时，会通过标准 Windows UAC 请求授权。";
+            ? "当前窗口已具有管理员权限；规则和计划任务操作会直接复用当前令牌，不再二次请求 UAC。"
+            : "当前窗口是普通权限。查看进程/连接不需要管理员权限；创建、解除规则和设置定时任务时，会通过标准 Windows UAC 请求授权。若希望避免二次提权，可先关闭所有窗口，再右键 exe 选择“以管理员身份运行”。";
 
         _timer.Tick += OnTimerTick;
         RaiseHeaderProperties();

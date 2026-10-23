@@ -98,3 +98,20 @@ dotnet test tests\NetworkAccessManager.Tests\NetworkAccessManager.Tests.csproj `
 - 未验证 Windows 11、非中文系统、移动热点/域网络等环境。
 - 未验证安装到 `Program Files` 后的普通权限写数据；README 明确建议使用可写目录或 `NAM_DATA_DIR`。
 - 未验证其他安全软件同时阻断、修改或删除本工具规则时的表现；界面会将外部修改显示为异常，不会自动覆盖。
+
+## 8. v1.0.1 增量验证
+
+v1.0.1 针对“界面以管理员身份运行后仍提示没有得到管理员权限”的问题做了两项修改：
+
+- 管理员判定改为读取当前进程令牌的 `TokenElevation`，而不是仅检查 `WindowsPrincipal.IsInRole(Administrator)`；被 UAC 过滤的普通令牌不会被误判为已提升。
+- 已提权桌面界面直接在自身进程内调用同一个 `HelperHost`/`NetworkControlService`，不再启动第二个辅助进程，也不再依赖第二次 UAC。
+
+本次验证通过嵌套的高权限 PowerShell 启动了 Release 版 apphost：
+
+- 启动日志为 `管理员权限=True`。
+- 通过 UI 提交网络目标操作后，日志明确出现“当前桌面窗口已具有管理员权限，直接在进程内执行操作，不再请求第二次 UAC”。
+- 该验证沙箱仍然拒绝自定义 apphost 的防火墙 COM（提示“当前权限无法读取 Windows 防火墙状态”），因此没有在此沙箱内完成“已提权 UI 直接创建真实防火墙规则”的最终写入验证；真实防火墙创建/删除见第 2 节，由独立提权验证控制台完成。
+- 交互式 UAC 同意提示仍未验证。v1.0.1 的正常权限路径仍会启动标准 `runas` 辅助进程。
+
+如果用户按“以管理员身份运行”启动后，界面仍显示“普通权限”，说明 Windows 没有提升该进程；本工具不能也不应该绕过系统权限。需要检查 UAC、组策略或安全软件。
+

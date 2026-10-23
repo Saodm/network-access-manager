@@ -93,10 +93,15 @@ internal static class Program
         // allowed to race over the same mutable state.
         var dataRootHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(paths.RootDirectory.ToLowerInvariant())))[..16];
         var mutexName = $"Local\\NetworkAccessManager.UI.{dataRootHash}";
+        var isElevated = WindowsPrivilege.IsAdministrator();
         using var mutex = new Mutex(initiallyOwned: true, mutexName, out var createdNew);
         if (!createdNew)
         {
-            MessageBox.Show("本工具已经有一个窗口在运行。请切换到已有窗口。", "网络访问管理器", MessageBoxButton.OK, MessageBoxImage.Information);
+            var message = isElevated
+                ? "本工具已有一个窗口在运行。当前“以管理员身份运行”的启动被单实例保护拦截，未执行任何操作。\n\n请先完全关闭已打开的本工具窗口（包括任务栏中的窗口），再重新右键 NetworkAccessManager.exe，选择“以管理员身份运行”。"
+                : "本工具已经有一个窗口在运行。\n\n如果你刚选择了“以管理员身份运行”但没有看到管理员窗口，通常是因为已有普通权限窗口没有关闭；请先完全关闭所有本工具窗口，再右键 exe 以管理员身份启动。";
+            MessageBox.Show(message, "网络访问管理器", MessageBoxButton.OK,
+                isElevated ? MessageBoxImage.Warning : MessageBoxImage.Information);
             return 0;
         }
 
@@ -129,7 +134,7 @@ internal static class Program
 
         try
         {
-            log.Info("UI", $"启动桌面界面前检查完成。数据目录={paths.RootDirectory}；日志目录={paths.LogsDirectory}；管理员权限={WindowsPrivilege.IsAdministrator()}。");
+            log.Info("UI", $"启动桌面界面前检查完成。数据目录={paths.RootDirectory}；日志目录={paths.LogsDirectory}；管理员权限={isElevated}。");
             var window = new MainWindow(paths, log, loggingError);
             app.MainWindow = window;
             return app.Run(window);
