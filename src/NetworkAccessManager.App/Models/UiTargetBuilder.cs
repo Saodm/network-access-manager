@@ -31,7 +31,12 @@ public sealed class UiTargetOption
     public bool RequiresHighRiskAck => Kind == RuleTargetKind.Program && Risk >= RiskLevel.High && CanBlock;
 
     public string Key => $"{Kind}|{Value.ToLowerInvariant()}";
-    public string KindText => Kind == RuleTargetKind.Program ? "程序" : "网络目标";
+    public string KindText => Kind switch
+    {
+        RuleTargetKind.Program => "程序",
+        RuleTargetKind.Ethernet => "以太网",
+        _ => "网络目标"
+    };
     public string DirectionText => ActiveDirections == BlockDirections.None ? "—" : ActiveDirections.ToChinese();
     public Brush RiskBrush => UiBrushes.ForRisk(Risk);
     public string RiskText => Risk switch

@@ -115,6 +115,8 @@ public sealed partial class NetworkControlService
                 {
                     TimestampUtc = now,
                     Operation = "禁用以太网",
+                    TargetKind = RuleTargetKind.Ethernet,
+                    Target = "所有物理以太网适配器",
                     ActualUtc = now,
                     Outcome = success ? OperationOutcome.Success : disabled.Count > 0 ? OperationOutcome.Warning : OperationOutcome.Failure,
                     Message = message,
@@ -205,6 +207,8 @@ public sealed partial class NetworkControlService
                 {
                     TimestampUtc = now,
                     Operation = "恢复以太网",
+                    TargetKind = RuleTargetKind.Ethernet,
+                    Target = "所有物理以太网适配器",
                     ActualUtc = now,
                     Outcome = success ? OperationOutcome.Success : restored.Count > 0 ? OperationOutcome.Warning : OperationOutcome.Failure,
                     Message = message,

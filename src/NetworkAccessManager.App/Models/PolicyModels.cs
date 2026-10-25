@@ -27,7 +27,12 @@ public sealed class RuleStatusView
 
     public string RuleId => Record.RuleId;
     public string RuleIdShort => Record.RuleId.Length > 8 ? Record.RuleId[..8] : Record.RuleId;
-    public string TargetKindText => Record.TargetKind == RuleTargetKind.Program ? "程序" : "网络目标";
+    public string TargetKindText => Record.TargetKind switch
+    {
+        RuleTargetKind.Program => "程序",
+        RuleTargetKind.Ethernet => "以太网",
+        _ => "网络目标"
+    };
     public string TargetText => Record.Target;
     public string DirectionText => Record.Direction.ToShortChinese();
     public string FirewallRuleName => Record.FirewallRuleName;
@@ -107,12 +112,19 @@ public sealed class ScheduledTaskView
     public string TaskId => Record.TaskId;
     public string TaskIdShort => Record.TaskId.Length > 8 ? Record.TaskId[..8] : Record.TaskId;
     public string ModeText => Record.ModeText;
-    public string TargetKindText => Record.TargetKind == RuleTargetKind.Program ? "程序" : "网络目标";
+    public string TargetKindText => Record.TargetKind switch
+    {
+        RuleTargetKind.Program => "程序",
+        RuleTargetKind.Ethernet => "以太网",
+        _ => "网络目标"
+    };
     public string TargetText => Record.Target;
     public string DisplayTarget => Record.TargetKind == RuleTargetKind.Program
         ? System.IO.Path.GetFileName(Record.Target)
         : Record.Target;
-    public string DirectionText => Record.Directions.ToChinese();
+    public string DirectionText => Record.Mode == ScheduledMode.DelayedEthernetDisable
+        ? "—"
+        : Record.Directions.ToChinese();
     public string CreatedText => TimeDisplay.LocalDateTime(Record.CreatedUtc);
     public string PlannedText => TimeDisplay.LocalDateTime(Record.PlannedUtc);
     public string StartedText => TimeDisplay.LocalDateTime(Record.StartedUtc);
@@ -156,7 +168,12 @@ public sealed class ScheduledTaskView
 
     public string StatusText => EffectiveState switch
     {
-        EffectiveTaskState.Waiting => Record.Mode == ScheduledMode.DelayedBlock ? "等待延迟禁止" : "等待执行",
+        EffectiveTaskState.Waiting => Record.Mode switch
+        {
+            ScheduledMode.DelayedBlock => "等待延迟禁止",
+            ScheduledMode.DelayedEthernetDisable => "等待延迟禁网",
+            _ => "等待执行"
+        },
         EffectiveTaskState.Due => "已到计划时间，等待系统执行",
         EffectiveTaskState.Overdue => "已超时，等待系统补执行",
         EffectiveTaskState.Running => "执行中",
@@ -186,7 +203,12 @@ public sealed class ScheduledTaskView
         : IsFailure ? Infrastructure.UiBrushes.Red : Infrastructure.UiBrushes.ForTaskStatus(Record.Status);
 
     public string FailureText => Record.FailureReason ?? (Record.Status == ScheduledTaskStatus.Failed ? "未提供失败原因" : "—");
-    public string ExecutionActionText => Record.ExecutionAction == ScheduledExecutionAction.Block ? "创建阻断规则" : "解除本工具规则";
+    public string ExecutionActionText => Record.ExecutionAction switch
+    {
+        ScheduledExecutionAction.Block => "创建阻断规则",
+        ScheduledExecutionAction.EthernetDisable => "禁用物理以太网",
+        _ => "解除本工具规则"
+    };
     public string SearchText => string.Join(' ', TaskId, ModeText, TargetText, StatusText, ResultText, ScheduledTaskName, DirectionText, CreatedText, PlannedText);
 }
 

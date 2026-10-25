@@ -91,4 +91,95 @@ public sealed class EthernetControlTests
         Assert.Equal(0, ethernet.EnableCalls);
         Assert.True(ethernet.Adapters[0].AdminEnabled);
     }
+
+    [Fact]
+    public async Task Delayed_disable_registers_task_and_disables_on_execution()
+    {
+        using var workspace = new TempWorkspace();
+        var ethernet = new FakeEthernetController();
+        var scheduler = new FakeScheduler();
+        var clock = new FakeClock();
+        var service = TestServiceFactory.Create(workspace, new FakeFirewallManager(), scheduler, clock, ethernet);
+
+        var scheduled = await service.RunActionAsync(new ElevatedAction
+        {
+            ActionId = Guid.NewGuid().ToString("N"),
+            Kind = ElevatedActionKind.ScheduleDelayedEthernetDisable,
+            DelayMinutes = 10,
+            Directions = BlockDirections.None
+        }, "测试", "eth-delay");
+        Assert.True(scheduled.Success, scheduled.Message);
+        Assert.NotNull(scheduled.TaskId);
+        Assert.Single(scheduler.Tasks);
+        Assert.StartsWith("--execute-task=", scheduler.LastArguments);
+
+        var state = workspace.CreateStore().ReadState().State;
+        var task = Assert.Single(state.Tasks);
+        Assert.Equal(ScheduledMode.DelayedEthernetDisable, task.Mode);
+        Assert.Equal(ScheduledExecutionAction.EthernetDisable, task.ExecutionAction);
+        Assert.Equal(RuleTargetKind.Ethernet, task.TargetKind);
+        Assert.Equal("所有物理以太网适配器", task.Target);
+        Assert.Empty(task.PlannedRules);
+        Assert.False(state.Ethernet.IsDisabledByTool);
+        Assert.True(ethernet.Adapters[0].AdminEnabled);
+
+        var execution = await service.ExecuteScheduledTaskAsync(task.TaskId);
+        Assert.True(execution.Success, execution.Message);
+        Assert.False(ethernet.Adapters[0].AdminEnabled);
+        state = workspace.CreateStore().ReadState().State;
+        task = Assert.Single(state.Tasks);
+        Assert.Equal(ScheduledTaskStatus.Succeeded, task.Status);
+        Assert.True(state.Ethernet.IsDisabledByTool);
+        Assert.Single(state.Ethernet.DisabledAdapters);
+        Assert.Empty(scheduler.Tasks);
+    }
+
+    [Fact]
+    public async Task Delayed_disable_rejects_another_pending_task()
+    {
+        using var workspace = new TempWorkspace();
+        var ethernet = new FakeEthernetController();
+        var scheduler = new FakeScheduler();
+        var service = TestServiceFactory.Create(workspace, new FakeFirewallManager(), scheduler, new FakeClock(), ethernet);
+
+        var first = await service.RunActionAsync(new ElevatedAction
+        {
+            ActionId = Guid.NewGuid().ToString("N"),
+            Kind = ElevatedActionKind.ScheduleDelayedEthernetDisable,
+            DelayMinutes = 10,
+            Directions = BlockDirections.None
+        }, "测试", "eth-delay-1");
+        Assert.True(first.Success, first.Message);
+
+        var second = await service.RunActionAsync(new ElevatedAction
+        {
+            ActionId = Guid.NewGuid().ToString("N"),
+            Kind = ElevatedActionKind.ScheduleDelayedEthernetDisable,
+            DelayMinutes = 20,
+            Directions = BlockDirections.None
+        }, "测试", "eth-delay-2");
+        Assert.False(second.Success);
+        Assert.Single(scheduler.Tasks);
+        Assert.Single(workspace.CreateStore().ReadState().State.Tasks);
+    }
+
+    [Fact]
+    public async Task Delayed_disable_rejects_when_ethernet_is_already_disabled()
+    {
+        using var workspace = new TempWorkspace();
+        var ethernet = new FakeEthernetController();
+        var service = TestServiceFactory.Create(workspace, new FakeFirewallManager(), new FakeScheduler(), new FakeClock(), ethernet);
+        var immediate = await service.RunActionAsync(Action(ElevatedActionKind.DisableEthernet), "测试", "eth-now");
+        Assert.True(immediate.Success, immediate.Message);
+
+        var scheduled = await service.RunActionAsync(new ElevatedAction
+        {
+            ActionId = Guid.NewGuid().ToString("N"),
+            Kind = ElevatedActionKind.ScheduleDelayedEthernetDisable,
+            DelayMinutes = 10,
+            Directions = BlockDirections.None
+        }, "测试", "eth-delay-disabled");
+        Assert.False(scheduled.Success);
+        Assert.Empty(workspace.CreateStore().ReadState().State.Tasks);
+    }
 }

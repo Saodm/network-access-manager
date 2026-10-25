@@ -54,6 +54,8 @@
                 <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Content="{Binding EthernetToggleText}" Style="{StaticResource ToolbarButtonStyle}" Click="EthernetToggleButton_Click"
                             IsEnabled="{Binding CanToggleEthernet}" ToolTip="{Binding EthernetDetailText}" MinWidth="88" />
+                    <Button Content="延迟禁网…" Style="{StaticResource ToolbarButtonStyle}" Click="EthernetScheduleButton_Click"
+                            IsEnabled="{Binding CanScheduleEthernetDisable}" ToolTip="安排一个延迟任务，到点后禁用所有物理以太网适配器" MinWidth="88" />
                     <Button Content="刷新 (F5)" Style="{StaticResource ToolbarButtonStyle}" Click="RefreshButton_Click" IsEnabled="{Binding IsRefreshButtonEnabled}" />
                     <Button Content="按网络目标禁止…" Style="{StaticResource ToolbarButtonStyle}" Click="NetworkTargetButton_Click" MinWidth="112" />
                     <Button Content="设置" Style="{StaticResource ToolbarButtonStyle}" Click="SettingsButton_Click" />

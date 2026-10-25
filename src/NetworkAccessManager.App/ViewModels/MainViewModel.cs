@@ -50,6 +50,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private IReadOnlyList<EthernetAdapterInfo> _ethernetAdapters = Array.Empty<EthernetAdapterInfo>();
     private IReadOnlyList<EthernetAdapterRecord> _ethernetDisabledRecords = Array.Empty<EthernetAdapterRecord>();
     private bool _isEthernetDisabledByTool;
+    private bool _hasPendingEthernetTask;
     private bool _isBusyOperation;
 
     private IReadOnlyList<ProcessRowViewModel> _selectedApp = Array.Empty<ProcessRowViewModel>();
@@ -183,7 +184,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public IReadOnlyList<EthernetAdapterInfo> EthernetAdapters => _ethernetAdapters;
     public IReadOnlyList<EthernetAdapterRecord> EthernetDisabledRecords => _ethernetDisabledRecords;
     public bool IsEthernetDisabledByTool => _isEthernetDisabledByTool;
+    public bool HasPendingEthernetTask => _hasPendingEthernetTask;
     public bool CanToggleEthernet => IsEthernetDisabledByTool || _ethernetAdapters.Count > 0;
+    public bool CanScheduleEthernetDisable =>
+        !IsEthernetDisabledByTool && !_hasPendingEthernetTask && _ethernetAdapters.Count > 0;
     public string EthernetToggleText => IsEthernetDisabledByTool ? "恢复网络" : "禁用网络";
     public string EthernetStatusText
     {
@@ -204,6 +208,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             if (IsEthernetDisabledByTool)
                 return "以下以太网适配器由本工具禁用：" + string.Join("、", _ethernetDisabledRecords.Select(a => a.Name)) +
                        "。点击“恢复网络”重新启用。";
+            if (_hasPendingEthernetTask)
+                return "已有一个待执行的延迟禁网任务。可在“任务与操作历史”中查看或取消；任务执行后会禁用物理以太网。";
             if (_ethernetAdapters.Count == 0)
                 return "未发现物理以太网适配器；无线、VPN 和虚拟网卡不会被此功能处理。";
             return "物理以太网适配器：" + string.Join("、", _ethernetAdapters.Select(a => $"{a.Name}（{a.StatusText}）")) +
@@ -956,17 +962,23 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                                    ?? new List<EthernetAdapterRecord>();
         _isEthernetDisabledByTool =
             snapshot.State.Ethernet?.IsDisabledByTool == true && _ethernetDisabledRecords.Count > 0;
+        _hasPendingEthernetTask = snapshot.State.Tasks.Any(t =>
+            t.Mode == ScheduledMode.DelayedEthernetDisable &&
+            t.Status is ScheduledTaskStatus.Pending or ScheduledTaskStatus.Running);
         OnPropertyChanged(nameof(EthernetAdapters));
         OnPropertyChanged(nameof(EthernetDisabledRecords));
         OnPropertyChanged(nameof(IsEthernetDisabledByTool));
+        OnPropertyChanged(nameof(HasPendingEthernetTask));
         OnPropertyChanged(nameof(CanToggleEthernet));
+        OnPropertyChanged(nameof(CanScheduleEthernetDisable));
         OnPropertyChanged(nameof(EthernetToggleText));
         OnPropertyChanged(nameof(EthernetStatusText));
         OnPropertyChanged(nameof(EthernetDetailText));
     }
 
     private void UpdateFirewallHeader(UiMonitorSnapshot snapshot)
-    {        var availability = snapshot.FirewallAvailability;
+    {
+        var availability = snapshot.FirewallAvailability;
         FirewallError = availability.Error;
         var ruleCount = snapshot.State.Rules.Count(r => r.Status == ManagedRuleStatus.Active);
         var prefixCount = availability.ManagedRuleCount ?? ruleCount;

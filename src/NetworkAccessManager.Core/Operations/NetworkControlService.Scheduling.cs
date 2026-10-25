@@ -334,7 +334,7 @@ public sealed partial class NetworkControlService
 
     private static string BuildScheduleDescription(string action, ValidatedTarget target)
     {
-        var text = $"网络访问管理器 · {action} · {target.Kind switch { RuleTargetKind.Program => "程序", _ => "网络目标" }}：{target.Display}";
+        var text = $"网络访问管理器 · {action} · {target.Kind switch { RuleTargetKind.Program => "程序", RuleTargetKind.Ethernet => "以太网", _ => "网络目标" }}：{target.Display}";
         return text.Length > 500 ? text[..500] + "…" : text;
     }
 
@@ -430,6 +430,8 @@ public sealed partial class NetworkControlService
                 ScheduledExecutionResult executionResult;
                 if (task.ExecutionAction == ScheduledExecutionAction.Block)
                     executionResult = ExecuteScheduledBlock(task);
+                else if (task.ExecutionAction == ScheduledExecutionAction.EthernetDisable)
+                    executionResult = ExecuteScheduledEthernetDisable(task);
                 else
                     executionResult = ExecuteScheduledUnblock(task);
 

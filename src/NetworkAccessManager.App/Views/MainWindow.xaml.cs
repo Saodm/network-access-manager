@@ -27,6 +27,7 @@ public partial class MainWindow : Window
     private bool _initialized;
     private Forms.NotifyIcon? _trayIcon;
     private Forms.ToolStripMenuItem? _trayEthernetItem;
+    private Forms.ToolStripMenuItem? _trayEthernetScheduleItem;
     private bool _allowClose;
     private bool _trayHintShown;
     private bool _exitPromptOpen;
@@ -93,11 +94,14 @@ public partial class MainWindow : Window
             showItem.Click += (_, _) => ShowFromTray();
             _trayEthernetItem = new Forms.ToolStripMenuItem("禁用网络");
             _trayEthernetItem.Click += (_, _) => Dispatcher.BeginInvoke(new Action(() => _ = ToggleEthernetAsync()));
+            _trayEthernetScheduleItem = new Forms.ToolStripMenuItem("延迟禁网…");
+            _trayEthernetScheduleItem.Click += (_, _) => Dispatcher.BeginInvoke(new Action(() => _ = ScheduleEthernetDisableAsync()));
             var exitItem = new Forms.ToolStripMenuItem("退出");
             exitItem.Click += (_, _) => Dispatcher.BeginInvoke(new Action(() => _ = ExitApplicationAsync()));
             menu.Items.Add(showItem);
             menu.Items.Add(new Forms.ToolStripSeparator());
             menu.Items.Add(_trayEthernetItem);
+            menu.Items.Add(_trayEthernetScheduleItem);
             menu.Items.Add(new Forms.ToolStripSeparator());
             menu.Items.Add(exitItem);
             menu.Opening += (_, _) => UpdateTrayMenu();
@@ -118,13 +122,14 @@ public partial class MainWindow : Window
         {
             _trayIcon = null;
             _trayEthernetItem = null;
+            _trayEthernetScheduleItem = null;
             _log.Error("UI", "创建系统托盘图标失败；关闭窗口将直接退出", ex);
         }
     }
 
     private void Vm_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(MainViewModel.EthernetToggleText) or nameof(MainViewModel.CanToggleEthernet))
+        if (e.PropertyName is nameof(MainViewModel.EthernetToggleText) or nameof(MainViewModel.CanToggleEthernet) or nameof(MainViewModel.CanScheduleEthernetDisable))
             UpdateTrayMenu();
     }
 
@@ -150,6 +155,7 @@ public partial class MainWindow : Window
         {
             _trayIcon = null;
             _trayEthernetItem = null;
+            _trayEthernetScheduleItem = null;
         }
     }
 
@@ -189,6 +195,8 @@ public partial class MainWindow : Window
         if (_trayEthernetItem is null) return;
         _trayEthernetItem.Text = _vm.IsEthernetDisabledByTool ? "恢复网络" : "禁用网络";
         _trayEthernetItem.Enabled = _vm.CanToggleEthernet && !_vm.IsBusy;
+        if (_trayEthernetScheduleItem is not null)
+            _trayEthernetScheduleItem.Enabled = _vm.CanScheduleEthernetDisable && !_vm.IsBusy;
         if (_trayIcon is not null)
             _trayIcon.Text = _vm.IsEthernetDisabledByTool ? "网络访问管理器 - 以太网已禁用" : "网络访问管理器";
     }
@@ -234,6 +242,39 @@ public partial class MainWindow : Window
                 Kind = ElevatedActionKind.DisableEthernet
             }
         ], "禁用以太网");
+        UpdateTrayMenu();
+    }
+
+    private async void EthernetScheduleButton_Click(object sender, RoutedEventArgs e) =>
+        await ScheduleEthernetDisableAsync();
+
+    private async Task ScheduleEthernetDisableAsync()
+    {
+        if (_vm.IsBusy) return;
+        if (!IsVisible) ShowFromTray();
+        if (!_vm.CanScheduleEthernetDisable)
+        {
+            _vm.ReportStatus(_vm.IsEthernetDisabledByTool
+                ? "以太网当前已经被禁用，请先恢复网络，再安排延迟禁网。"
+                : _vm.HasPendingEthernetTask
+                    ? "已经有一个待执行的延迟禁网任务，请先在“任务与操作历史”中查看或取消。"
+                    : "未发现可用的物理以太网适配器，无法安排延迟禁网。",
+                Infrastructure.UiBrushes.Orange);
+            return;
+        }
+
+        var dialog = new EthernetScheduleDialog(_vm.EthernetAdapters) { Owner = this };
+        if (dialog.ShowDialog() != true) return;
+        await ExecuteAndShowAsync(
+        [
+            new ElevatedAction
+            {
+                ActionId = Guid.NewGuid().ToString("N"),
+                Kind = ElevatedActionKind.ScheduleDelayedEthernetDisable,
+                DelayMinutes = dialog.DelayMinutes,
+                Directions = BlockDirections.None
+            }
+        ], "延迟禁网");
         UpdateTrayMenu();
     }
 

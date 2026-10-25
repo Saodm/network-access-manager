@@ -79,6 +79,7 @@ public sealed class ScheduledTaskRecord
         ScheduledMode.DelayedBlock => "延迟禁止",
         ScheduledMode.DelayedUnblock => "延迟解除",
         ScheduledMode.TimedBlock => "限时禁止",
+        ScheduledMode.DelayedEthernetDisable => "延迟禁网",
         _ => "未知"
     };
 

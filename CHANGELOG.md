@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 - 2026-10-25
+
+- Added delayed Ethernet disable: the “延迟禁网…” entry in the toolbar and tray creates a one-shot Windows scheduled task that disables all enabled physical Ethernet adapters after 1–10080 minutes.
+- The delayed task can be created while the UI is open, survives closing the UI, and appears in “任务与操作历史” with cancel support. It does not auto-restore at the end; restore remains explicit.
+- The scheduling service re-checks physical adapters, rejects duplicate pending delayed-network tasks, and records the actual execution result rather than assuming success.
+- Added tests for delayed task registration/execution, duplicate rejection, already-disabled rejection, and target labeling (119 tests total).
+
 ## 1.1.0 - 2026-10-24
 
 - Added a one-click “禁用网络 / 恢复网络” entry for all physical Ethernet adapters. It uses Windows `NetAdapter`, handles only `MediaType=802.3` physical Ethernet adapters, and persists the adapter list used for restoration.

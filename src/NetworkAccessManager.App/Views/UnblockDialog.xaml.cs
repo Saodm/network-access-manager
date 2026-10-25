@@ -25,7 +25,7 @@ public sealed class UnblockChoiceItem : ObservableObject
     }
 
     public string Display => Target.Display;
-    public string KindText => Target.Kind == RuleTargetKind.Program ? "程序" : "网络目标";
+    public string KindText => Target.Kind == RuleTargetKind.Program ? "程序" : Target.Kind == RuleTargetKind.Ethernet ? "以太网" : "网络目标";
     public string DirectionText => Target.DirectionsText;
     public string Detail => Target.Detail;
     public string StatusText => Target.StatusText;

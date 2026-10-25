@@ -86,6 +86,7 @@ public sealed partial class NetworkControlService
                 ElevatedActionKind.CancelScheduledTask => await ExecuteCancelScheduledTaskAsync(action, source, correlationId, cancellationToken).ConfigureAwait(false),
                 ElevatedActionKind.DisableEthernet => ExecuteEthernetDisable(action, source, correlationId),
                 ElevatedActionKind.EnableEthernet => ExecuteEthernetEnable(action, source, correlationId),
+                ElevatedActionKind.ScheduleDelayedEthernetDisable => await ScheduleDelayedEthernetDisableAsync(action, source, correlationId, cancellationToken).ConfigureAwait(false),
                 _ => Failure(action, "不支持的操作类型。", source, correlationId)
             };
         }
@@ -110,7 +111,9 @@ public sealed partial class NetworkControlService
         if ((action.Directions & ~BlockDirections.Both) != 0)
             return "阻断方向包含未知标志。";
 
-        if (action.Kind is not (ElevatedActionKind.CancelScheduledTask or ElevatedActionKind.UnblockTarget))
+        if (action.Kind is not (ElevatedActionKind.CancelScheduledTask or ElevatedActionKind.UnblockTarget or
+            ElevatedActionKind.DisableEthernet or ElevatedActionKind.EnableEthernet or
+            ElevatedActionKind.ScheduleDelayedEthernetDisable))
         {
             if (action.Directions == BlockDirections.None)
                 return "必须至少选择一个阻断方向（出站或入站）。";
@@ -118,6 +121,13 @@ public sealed partial class NetworkControlService
 
         if (action.Kind is ElevatedActionKind.DisableEthernet or ElevatedActionKind.EnableEthernet)
             return null;
+
+        if (action.Kind == ElevatedActionKind.ScheduleDelayedEthernetDisable)
+        {
+            if (action.DelayMinutes is null || action.DelayMinutes < DurationValidator.MinMinutes || action.DelayMinutes > DurationValidator.MaxMinutes)
+                return $"延迟时间必须在 {DurationValidator.MinMinutes} 到 {DurationValidator.MaxMinutes} 分钟之间。";
+            return null;
+        }
 
         if (action.Kind is ElevatedActionKind.ScheduleDelayedBlock or ElevatedActionKind.ScheduleDelayedUnblock or ElevatedActionKind.ScheduleTimedBlock)
         {

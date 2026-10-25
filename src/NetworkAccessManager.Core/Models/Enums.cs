@@ -3,7 +3,8 @@ namespace NetworkAccessManager.Core.Models;
 public enum RuleTargetKind
 {
     Program = 0,
-    NetworkAddress = 1
+    NetworkAddress = 1,
+    Ethernet = 2
 }
 
 [Flags]
@@ -34,7 +35,8 @@ public enum ScheduledMode
 {
     DelayedBlock = 0,
     DelayedUnblock = 1,
-    TimedBlock = 2
+    TimedBlock = 2,
+    DelayedEthernetDisable = 3
 }
 
 public enum ScheduledTaskStatus
@@ -49,7 +51,8 @@ public enum ScheduledTaskStatus
 public enum ScheduledExecutionAction
 {
     Block = 0,
-    Unblock = 1
+    Unblock = 1,
+    EthernetDisable = 2
 }
 
 public enum OperationOutcome

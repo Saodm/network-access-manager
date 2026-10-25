@@ -12,7 +12,8 @@ public enum ElevatedActionKind
     UnblockTarget = 5,
     CancelScheduledTask = 6,
     DisableEthernet = 7,
-    EnableEthernet = 8
+    EnableEthernet = 8,
+    ScheduleDelayedEthernetDisable = 9
 }
 
 public sealed class ElevatedAction

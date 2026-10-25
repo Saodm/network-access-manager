@@ -1,0 +1,76 @@
+<Window x:Class="NetworkAccessManager.App.Views.EthernetScheduleDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="延迟禁用以太网"
+        Width="700"
+        Height="600"
+        MinWidth="640"
+        MinHeight="540"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,8">
+            <TextBlock Text="延迟禁用以太网" FontSize="16" FontWeight="SemiBold" />
+            <TextBlock Text="在指定时间到达后，禁用本机所有当前启用的物理以太网适配器。现在不会断网。"
+                       Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <Border Grid.Row="1" Style="{StaticResource DialogSectionStyle}" Padding="10">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel>
+                    <Border Background="{StaticResource WarningBackgroundBrush}" BorderBrush="{StaticResource WarningBorderBrush}"
+                            BorderThickness="1" CornerRadius="3" Padding="9,7" Margin="0,0,0,9">
+                        <StackPanel>
+                            <TextBlock Text="禁用后本机以太网会立即中断。如果任务执行时你正在使用远程桌面或远程协助，将无法远程恢复，必须在本机操作。"
+                                       Foreground="{StaticResource OrangeBrush}" TextWrapping="Wrap" FontSize="11" />
+                            <CheckBox x:Name="AckCheck" Margin="0,8,0,0" Checked="Ack_Changed" Unchecked="Ack_Changed"
+                                      Content="我已了解远程连接会立即断开，并确认安排此任务" />
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Text="延迟时间（分钟）" FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="5 分钟" Style="{StaticResource ToolbarButtonStyle}" Tag="5" Click="QuickMinutes_Click" Margin="0,0,6,0" />
+                        <Button Content="10 分钟" Style="{StaticResource ToolbarButtonStyle}" Tag="10" Click="QuickMinutes_Click" Margin="0,0,6,0" />
+                        <Button Content="30 分钟" Style="{StaticResource ToolbarButtonStyle}" Tag="30" Click="QuickMinutes_Click" Margin="0,0,6,0" />
+                        <Button Content="60 分钟" Style="{StaticResource ToolbarButtonStyle}" Tag="60" Click="QuickMinutes_Click" Margin="0,0,6,0" />
+                        <Button Content="2 小时" Style="{StaticResource ToolbarButtonStyle}" Tag="120" Click="QuickMinutes_Click" Margin="0,0,12,0" />
+                        <TextBox x:Name="MinutesTextBox" Width="76" Text="10" TextChanged="Minutes_TextChanged" />
+                        <TextBlock Text="分钟" VerticalAlignment="Center" Margin="6,0,0,0" />
+                    </StackPanel>
+                    <TextBlock x:Name="TimeErrorText" Foreground="{StaticResource RedBrush}" FontSize="11" Margin="0,4,0,0" />
+                    <TextBlock x:Name="PreviewTimeText" Foreground="{StaticResource MutedTextBrush}" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap" />
+
+                    <TextBlock Text="将被禁用的物理以太网适配器" FontWeight="SemiBold" Margin="0,12,0,5" />
+                    <DataGrid x:Name="AdapterGrid" Style="{StaticResource DataGridStyle}" IsReadOnly="True"
+                              SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal" Height="130">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="适配器" Binding="{Binding Name}" Width="170" ElementStyle="{StaticResource GridCellTextStyle}" />
+                            <DataGridTextColumn Header="描述" Binding="{Binding Description}" Width="*" MinWidth="240" ElementStyle="{StaticResource GridCellTextStyle}" />
+                            <DataGridTextColumn Header="状态" Binding="{Binding StatusText}" Width="110" ElementStyle="{StaticResource GridCellTextStyle}" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <TextBlock Margin="0,10,0,0" Foreground="{StaticResource MutedTextBrush}" FontSize="11" TextWrapping="Wrap"
+                               Text="任务交给 Windows 任务计划程序：关闭主窗口后仍会执行；到点禁用后不会自动恢复，需要手动恢复网络。若当前账户没有管理员权限，后台任务可能因无法提权而失败，失败会写入历史。" />
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <Grid Grid.Row="2" Margin="0,9,0,0">
+            <TextBlock VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" FontSize="11"
+                       Text="任务创建后可在“任务与操作历史”中查看或取消。" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="取消" Style="{StaticResource DialogButtonStyle}" IsCancel="True" Click="Cancel_Click" />
+                <Button x:Name="ConfirmButton" Content="创建延迟禁网任务" Style="{StaticResource PrimaryDialogButtonStyle}"
+                        MinWidth="155" IsEnabled="False" Click="Confirm_Click" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
