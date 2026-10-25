@@ -1,6 +1,7 @@
 using NetworkAccessManager.Core.Diagnostics;
 using NetworkAccessManager.Core.Firewall;
 using NetworkAccessManager.Core.Models;
+using NetworkAccessManager.Core.Network;
 using NetworkAccessManager.Core.Persistence;
 using NetworkAccessManager.Core.Security;
 using NetworkAccessManager.Core.Validation;
@@ -28,6 +29,7 @@ public sealed partial class NetworkControlService
     private readonly IClock _clock;
     private readonly IAppLog _log;
     private readonly string? _ownExecutablePath;
+    private readonly IEthernetController _ethernet;
 
     private static readonly HashSet<string> HardProtectedSystemBinaries = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -41,7 +43,8 @@ public sealed partial class NetworkControlService
         IScheduledTaskRegistrar scheduler,
         IClock clock,
         IAppLog? log = null,
-        string? ownExecutablePath = null)
+        string? ownExecutablePath = null,
+        IEthernetController? ethernet = null)
     {
         _store = store;
         _firewall = firewall;
@@ -49,6 +52,7 @@ public sealed partial class NetworkControlService
         _clock = clock;
         _log = log ?? NullAppLog.Instance;
         _ownExecutablePath = ownExecutablePath;
+        _ethernet = ethernet ?? new WindowsEthernetController();
     }
 
     public async Task<ElevatedActionResult> RunActionAsync(
@@ -80,6 +84,8 @@ public sealed partial class NetworkControlService
                 ElevatedActionKind.ScheduleTimedBlock => await ScheduleTimedBlockAsync(action, source, correlationId, cancellationToken).ConfigureAwait(false),
                 ElevatedActionKind.UnblockTarget => await ExecuteUnblockTargetAsync(action, source, correlationId, cancellationToken).ConfigureAwait(false),
                 ElevatedActionKind.CancelScheduledTask => await ExecuteCancelScheduledTaskAsync(action, source, correlationId, cancellationToken).ConfigureAwait(false),
+                ElevatedActionKind.DisableEthernet => ExecuteEthernetDisable(action, source, correlationId),
+                ElevatedActionKind.EnableEthernet => ExecuteEthernetEnable(action, source, correlationId),
                 _ => Failure(action, "不支持的操作类型。", source, correlationId)
             };
         }
@@ -109,6 +115,9 @@ public sealed partial class NetworkControlService
             if (action.Directions == BlockDirections.None)
                 return "必须至少选择一个阻断方向（出站或入站）。";
         }
+
+        if (action.Kind is ElevatedActionKind.DisableEthernet or ElevatedActionKind.EnableEthernet)
+            return null;
 
         if (action.Kind is ElevatedActionKind.ScheduleDelayedBlock or ElevatedActionKind.ScheduleDelayedUnblock or ElevatedActionKind.ScheduleTimedBlock)
         {

@@ -98,8 +98,8 @@ internal static class Program
         if (!createdNew)
         {
             var message = isElevated
-                ? "本工具已有一个窗口在运行。当前“以管理员身份运行”的启动被单实例保护拦截，未执行任何操作。\n\n请先完全关闭已打开的本工具窗口（包括任务栏中的窗口），再重新右键 NetworkAccessManager.exe，选择“以管理员身份运行”。"
-                : "本工具已经有一个窗口在运行。\n\n如果你刚选择了“以管理员身份运行”但没有看到管理员窗口，通常是因为已有普通权限窗口没有关闭；请先完全关闭所有本工具窗口，再右键 exe 以管理员身份启动。";
+                ? "本工具已有一个窗口在运行。当前“以管理员身份运行”的启动被单实例保护拦截，未执行任何操作。\n\n请先完全关闭已打开的本工具窗口（包括任务栏和系统托盘中的窗口），再重新右键 NetworkAccessManager.exe，选择“以管理员身份运行”。"
+                : "本工具已经有一个窗口在运行。\n\n它可能已最小化到右下角系统托盘，请双击托盘图标。如果你刚选择了“以管理员身份运行”但没有看到管理员窗口，请先从托盘退出所有实例，再右键 exe 以管理员身份启动。";
             MessageBox.Show(message, "网络访问管理器", MessageBoxButton.OK,
                 isElevated ? MessageBoxImage.Warning : MessageBoxImage.Information);
             return 0;

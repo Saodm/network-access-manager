@@ -2,6 +2,7 @@ using System.Diagnostics;
 using NetworkAccessManager.Core.Diagnostics;
 using NetworkAccessManager.Core.Firewall;
 using NetworkAccessManager.Core.Models;
+using NetworkAccessManager.Core.Network;
 using NetworkAccessManager.Core.Operations;
 using NetworkAccessManager.Core.Persistence;
 using NetworkAccessManager.Core.Security;
@@ -220,13 +221,97 @@ public sealed class FakeFirewallManager : IFirewallManager
     }
 }
 
+public sealed class FakeEthernetController : IEthernetController
+{
+    public List<EthernetAdapterInfo> Adapters { get; } =
+    [
+        new()
+        {
+            Id = "11111111-1111-1111-1111-111111111111",
+            Name = "测试以太网",
+            Description = "Test Ethernet",
+            AdminEnabled = true,
+            StatusText = "已连接",
+            MacAddress = "00-11-22-33-44-55"
+        }
+    ];
+    public string? FailureMessage { get; set; }
+    public int DisableCalls { get; private set; }
+    public int EnableCalls { get; private set; }
+
+    public IReadOnlyList<EthernetAdapterInfo> Inspect() => Adapters.ToList();
+
+    public EthernetChangeResult Disable(IReadOnlyList<EthernetAdapterRecord> adapters)
+    {
+        DisableCalls++;
+        if (FailureMessage is not null)
+            return new EthernetChangeResult { Success = false, Message = FailureMessage };
+        var ids = adapters.Select(a => a.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < Adapters.Count; i++)
+        {
+            if (!ids.Contains(Adapters[i].Id)) continue;
+            Adapters[i] = new EthernetAdapterInfo
+            {
+                Id = Adapters[i].Id,
+                Name = Adapters[i].Name,
+                Description = Adapters[i].Description,
+                StatusText = "已禁用",
+                MacAddress = Adapters[i].MacAddress,
+                AdminEnabled = false
+            };
+        }
+        var changed = adapters.Select(a => a.Id).Where(id => Adapters.Any(a => a.Id == id && a.AdminEnabled == false)).ToList();
+        return new EthernetChangeResult
+        {
+            Success = changed.Count == adapters.Count,
+            Message = "测试禁用完成",
+            ChangedAdapterIds = changed,
+            FailedAdapterIds = adapters.Select(a => a.Id).Except(changed).ToList(),
+            Before = Adapters,
+            After = Adapters
+        };
+    }
+
+    public EthernetChangeResult Enable(IReadOnlyList<EthernetAdapterRecord> adapters)
+    {
+        EnableCalls++;
+        if (FailureMessage is not null)
+            return new EthernetChangeResult { Success = false, Message = FailureMessage };
+        var ids = adapters.Select(a => a.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < Adapters.Count; i++)
+        {
+            if (!ids.Contains(Adapters[i].Id)) continue;
+            Adapters[i] = new EthernetAdapterInfo
+            {
+                Id = Adapters[i].Id,
+                Name = Adapters[i].Name,
+                Description = Adapters[i].Description,
+                StatusText = "已连接",
+                MacAddress = Adapters[i].MacAddress,
+                AdminEnabled = true
+            };
+        }
+        var changed = adapters.Select(a => a.Id).Where(id => Adapters.Any(a => a.Id == id && a.AdminEnabled == true)).ToList();
+        return new EthernetChangeResult
+        {
+            Success = changed.Count == adapters.Count,
+            Message = "测试恢复完成",
+            ChangedAdapterIds = changed,
+            FailedAdapterIds = adapters.Select(a => a.Id).Except(changed).ToList(),
+            Before = Adapters,
+            After = Adapters
+        };
+    }
+}
+
 public static class TestServiceFactory
 {
     public static NetworkControlService Create(
         TempWorkspace workspace,
         FakeFirewallManager firewall,
         FakeScheduler scheduler,
-        FakeClock clock)
+        FakeClock clock,
+        IEthernetController? ethernet = null)
     {
         return new NetworkControlService(
             workspace.CreateStore(),
@@ -234,7 +319,8 @@ public static class TestServiceFactory
             scheduler,
             clock,
             NullAppLog.Instance,
-            Path.Combine(workspace.Root, "NetworkAccessManager.exe"));
+            Path.Combine(workspace.Root, "NetworkAccessManager.exe"),
+            ethernet);
     }
 
     public static ElevatedAction BlockProgram(TempWorkspace workspace, BlockDirections directions = BlockDirections.Outbound) =>

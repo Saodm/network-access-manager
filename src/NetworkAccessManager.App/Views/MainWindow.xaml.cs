@@ -10,9 +10,11 @@ using NetworkAccessManager.App.Services;
 using NetworkAccessManager.App.ViewModels;
 using NetworkAccessManager.Core.Diagnostics;
 using NetworkAccessManager.Core.Models;
+using NetworkAccessManager.Core.Network;
 using NetworkAccessManager.Core.Operations;
 using NetworkAccessManager.Core.Persistence;
 using NetworkAccessManager.Core.Validation;
+using Forms = System.Windows.Forms;
 
 namespace NetworkAccessManager.App.Views;
 
@@ -23,6 +25,11 @@ public partial class MainWindow : Window
     private readonly MainViewModel _vm;
     private bool _suppressSelection;
     private bool _initialized;
+    private Forms.NotifyIcon? _trayIcon;
+    private Forms.ToolStripMenuItem? _trayEthernetItem;
+    private bool _allowClose;
+    private bool _trayHintShown;
+    private bool _exitPromptOpen;
 
     public MainWindow(AppPaths paths, IAppLog log, string? loggingError)
     {
@@ -31,6 +38,9 @@ public partial class MainWindow : Window
         _log = log;
         _vm = new MainViewModel(paths, log, loggingError);
         DataContext = _vm;
+        _vm.PropertyChanged += Vm_PropertyChanged;
+        if (Application.Current is not null)
+            Application.Current.SessionEnding += Application_SessionEnding;
 
         foreach (var grid in new[] { AppProcessGrid, SystemProcessGrid, ConnectionGrid })
         {
@@ -45,12 +55,241 @@ public partial class MainWindow : Window
     {
         if (_initialized) return;
         _initialized = true;
+        InitializeTrayIcon();
         await _vm.InitializeAsync();
     }
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
+        if (!_allowClose && _trayIcon is not null)
+        {
+            e.Cancel = true;
+            Hide();
+            _log.Info("UI", "关闭窗口已转为系统托盘运行。");
+            ShowTrayHint();
+            return;
+        }
+
         _vm.Dispose();
+        DisposeTrayIcon();
+    }
+
+    private void InitializeTrayIcon()
+    {
+        try
+        {
+            var resource = Application.GetResourceStream(new Uri("pack://application:,,,/app.ico"));
+            if (resource?.Stream is null)
+                throw new InvalidOperationException("找不到应用图标资源。");
+
+            using var memory = new MemoryStream();
+            resource.Stream.CopyTo(memory);
+            memory.Position = 0;
+            var icon = new System.Drawing.Icon(memory);
+
+            var menu = new Forms.ContextMenuStrip();
+            var showItem = new Forms.ToolStripMenuItem("显示主窗口");
+            showItem.Font = new System.Drawing.Font(showItem.Font, System.Drawing.FontStyle.Bold);
+            showItem.Click += (_, _) => ShowFromTray();
+            _trayEthernetItem = new Forms.ToolStripMenuItem("禁用网络");
+            _trayEthernetItem.Click += (_, _) => Dispatcher.BeginInvoke(new Action(() => _ = ToggleEthernetAsync()));
+            var exitItem = new Forms.ToolStripMenuItem("退出");
+            exitItem.Click += (_, _) => Dispatcher.BeginInvoke(new Action(() => _ = ExitApplicationAsync()));
+            menu.Items.Add(showItem);
+            menu.Items.Add(new Forms.ToolStripSeparator());
+            menu.Items.Add(_trayEthernetItem);
+            menu.Items.Add(new Forms.ToolStripSeparator());
+            menu.Items.Add(exitItem);
+            menu.Opening += (_, _) => UpdateTrayMenu();
+
+            _trayIcon = new Forms.NotifyIcon
+            {
+                Icon = icon,
+                Text = "网络访问管理器",
+                Visible = true,
+                ContextMenuStrip = menu
+            };
+            _trayIcon.DoubleClick += (_, _) => ShowFromTray();
+            _trayIcon.BalloonTipClicked += (_, _) => ShowFromTray();
+            UpdateTrayMenu();
+            _log.Info("UI", "系统托盘图标已创建；关闭主窗口将隐藏到托盘。");
+        }
+        catch (Exception ex)
+        {
+            _trayIcon = null;
+            _trayEthernetItem = null;
+            _log.Error("UI", "创建系统托盘图标失败；关闭窗口将直接退出", ex);
+        }
+    }
+
+    private void Vm_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(MainViewModel.EthernetToggleText) or nameof(MainViewModel.CanToggleEthernet))
+            UpdateTrayMenu();
+    }
+
+    private void Application_SessionEnding(object? sender, SessionEndingCancelEventArgs e)
+    {
+        _allowClose = true;
+        DisposeTrayIcon();
+    }
+
+    private void DisposeTrayIcon()
+    {
+        if (_trayIcon is null) return;
+        try
+        {
+            _trayIcon.Visible = false;
+            _trayIcon.Dispose();
+        }
+        catch
+        {
+            // Shutdown must never be blocked by a tray cleanup error.
+        }
+        finally
+        {
+            _trayIcon = null;
+            _trayEthernetItem = null;
+        }
+    }
+
+    private void ShowTrayHint()
+    {
+        if (_trayIcon is null || _trayHintShown) return;
+        _trayHintShown = true;
+        _trayIcon.BalloonTipTitle = "网络访问管理器仍在运行";
+        _trayIcon.BalloonTipText = _vm.IsEthernetDisabledByTool
+            ? "窗口已隐藏到系统托盘。以太网仍处于禁用状态；双击托盘图标恢复网络。"
+            : "窗口已隐藏到系统托盘。双击图标重新打开；退出请使用托盘菜单。";
+        _trayIcon.ShowBalloonTip(4000);
+    }
+
+    private void ShowFromTray()
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.BeginInvoke(new Action(ShowFromTray));
+            return;
+        }
+        if (!IsVisible) Show();
+        if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+        ShowInTaskbar = true;
+        Activate();
+        Topmost = true;
+        Topmost = false;
+    }
+
+    private void UpdateTrayMenu()
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.BeginInvoke(new Action(UpdateTrayMenu));
+            return;
+        }
+        if (_trayEthernetItem is null) return;
+        _trayEthernetItem.Text = _vm.IsEthernetDisabledByTool ? "恢复网络" : "禁用网络";
+        _trayEthernetItem.Enabled = _vm.CanToggleEthernet && !_vm.IsBusy;
+        if (_trayIcon is not null)
+            _trayIcon.Text = _vm.IsEthernetDisabledByTool ? "网络访问管理器 - 以太网已禁用" : "网络访问管理器";
+    }
+
+    private async void EthernetToggleButton_Click(object sender, RoutedEventArgs e) =>
+        await ToggleEthernetAsync();
+
+    private async Task ToggleEthernetAsync()
+    {
+        if (_vm.IsBusy) return;
+        if (!IsVisible) ShowFromTray();
+
+        if (_vm.IsEthernetDisabledByTool)
+        {
+            var dialog = new EthernetDialog(false, _vm.EthernetAdapters, _vm.EthernetDisabledRecords) { Owner = this };
+            if (dialog.ShowDialog() != true) return;
+            await ExecuteAndShowAsync(
+            [
+                new ElevatedAction
+                {
+                    ActionId = Guid.NewGuid().ToString("N"),
+                    Kind = ElevatedActionKind.EnableEthernet
+                }
+            ], "恢复以太网");
+            UpdateTrayMenu();
+            return;
+        }
+
+        var adapters = _vm.EthernetAdapters;
+        if (adapters.Count == 0)
+        {
+            _vm.ReportStatus("未发现物理以太网适配器；无线、VPN 和虚拟网卡不会由“禁用网络”处理。", Infrastructure.UiBrushes.Orange);
+            return;
+        }
+
+        var disableDialog = new EthernetDialog(true, adapters, Array.Empty<EthernetAdapterRecord>()) { Owner = this };
+        if (disableDialog.ShowDialog() != true) return;
+        await ExecuteAndShowAsync(
+        [
+            new ElevatedAction
+            {
+                ActionId = Guid.NewGuid().ToString("N"),
+                Kind = ElevatedActionKind.DisableEthernet
+            }
+        ], "禁用以太网");
+        UpdateTrayMenu();
+    }
+
+    private async Task ExitApplicationAsync()
+    {
+        if (_exitPromptOpen) return;
+        _exitPromptOpen = true;
+        try
+        {
+            if (_vm.IsBusy)
+            {
+                MessageBox.Show("当前正在刷新或执行操作，请稍后再退出。", "网络访问管理器",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (_vm.IsEthernetDisabledByTool)
+            {
+                var choice = MessageBox.Show(
+                    "以太网当前由本工具禁用。\n\n" +
+                    "“是”：先恢复 Ethernet 再退出。\n" +
+                    "“否”：保持断网并退出（之后需要在 Windows 网络连接中手动启用）。\n" +
+                    "“取消”：留在系统托盘。",
+                    "退出网络访问管理器",
+                    MessageBoxButton.YesNoCancel,
+                    MessageBoxImage.Warning);
+                if (choice == MessageBoxResult.Cancel) return;
+                if (choice == MessageBoxResult.Yes)
+                {
+                    ShowFromTray();
+                    var outcome = await _vm.ExecuteOperationAsync(
+                    [
+                        new ElevatedAction
+                        {
+                            ActionId = Guid.NewGuid().ToString("N"),
+                            Kind = ElevatedActionKind.EnableEthernet
+                        }
+                    ], "恢复以太网");
+                    new OperationResultDialog(outcome) { Owner = this }.ShowDialog();
+                    if (outcome.Response?.SuccessOverall != true)
+                    {
+                        UpdateTrayMenu();
+                        return;
+                    }
+                }
+            }
+
+            _allowClose = true;
+            DisposeTrayIcon();
+            Close();
+            Application.Current.Shutdown();
+        }
+        finally
+        {
+            _exitPromptOpen = false;
+        }
     }
 
     private async void Window_PreviewKeyDown(object sender, KeyEventArgs e)

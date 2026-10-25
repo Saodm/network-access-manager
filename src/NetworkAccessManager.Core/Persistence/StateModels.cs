@@ -10,6 +10,22 @@ public sealed class AppState
     public List<ManagedRuleRecord> Rules { get; set; } = new();
     public List<ScheduledTaskRecord> Tasks { get; set; } = new();
     public List<OperationHistoryEvent> Events { get; set; } = new();
+    public EthernetControlState Ethernet { get; set; } = new();
+}
+
+public sealed class EthernetControlState
+{
+    public bool IsDisabledByTool { get; set; }
+    public DateTimeOffset? DisabledUtc { get; set; }
+    public List<EthernetAdapterRecord> DisabledAdapters { get; set; } = new();
+    public string? Note { get; set; }
+}
+
+public sealed class EthernetAdapterRecord
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
 }
 
 public sealed class ManagedRuleRecord

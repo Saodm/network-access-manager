@@ -6,6 +6,7 @@ using NetworkAccessManager.App.ViewModels;
 using NetworkAccessManager.Core.Diagnostics;
 using NetworkAccessManager.Core.Firewall;
 using NetworkAccessManager.Core.Models;
+using NetworkAccessManager.Core.Network;
 using NetworkAccessManager.Core.Persistence;
 using NetworkAccessManager.Core.Services;
 
@@ -19,6 +20,7 @@ public sealed class UiMonitorSnapshot
     public StoreReadResult? StoreRead { get; init; }
     public string? StateError { get; init; }
     public FirewallInspectionBatch Firewall { get; init; } = new();
+    public IReadOnlyList<EthernetAdapterInfo> EthernetAdapters { get; init; } = Array.Empty<EthernetAdapterInfo>();
     public IReadOnlyList<string> Warnings { get; init; } = Array.Empty<string>();
     public DateTimeOffset CapturedUtc { get; init; }
     public TimeSpan Duration { get; init; }
@@ -87,6 +89,20 @@ public sealed class UiMonitorService
         }
 
         var activeRules = state.Rules.Where(r => r.Status == ManagedRuleStatus.Active).ToList();
+
+        IReadOnlyList<EthernetAdapterInfo> ethernetAdapters;
+        try
+        {
+            ethernetAdapters = EthernetAdapterInspector.Inspect();
+        }
+        catch (Exception ex)
+        {
+            ethernetAdapters = Array.Empty<EthernetAdapterInfo>();
+            warnings.Add("读取以太网适配器失败：" + ex.Message);
+            _log.Error("Monitor", "读取物理以太网适配器失败", ex);
+        }
+        if (state.Ethernet?.IsDisabledByTool == true && state.Ethernet.DisabledAdapters.Count > 0)
+            warnings.Add("以太网当前由本工具禁用；可通过主界面或托盘菜单的“恢复网络”重新启用。");
         FirewallInspectionBatch firewallBatch;
         try
         {
@@ -180,6 +196,7 @@ public sealed class UiMonitorService
             StoreRead = storeRead,
             StateError = stateError,
             Firewall = firewallBatch,
+            EthernetAdapters = ethernetAdapters,
             Warnings = warnings.Distinct().ToList(),
             CapturedUtc = DateTimeOffset.UtcNow,
             Duration = stopwatch.Elapsed

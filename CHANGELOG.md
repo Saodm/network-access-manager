@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0 - 2026-10-24
+
+- Added a one-click “禁用网络 / 恢复网络” entry for all physical Ethernet adapters. It uses Windows `NetAdapter`, handles only `MediaType=802.3` physical Ethernet adapters, and persists the adapter list used for restoration.
+- Added explicit remote-connection and acknowledgement warnings before disabling the network.
+- Added a Windows system-tray icon. Closing the main window now hides to the tray instead of exiting; the tray menu can show the window, toggle Ethernet, or exit.
+- Exiting while Ethernet is disabled now offers restore-and-exit, exit-with-network-disabled, or stay in the tray. A forced or crashed process can be recovered by relaunching and using “恢复网络” or by Windows network settings.
+- Added four fake-controller tests for the Ethernet disable/restore state machine and failure paths (116 tests total).
+
 ## 1.0.1 - 2026-10-23
 
 - Fixed the case where a desktop UI that was already started as administrator still launched a second, non-elevated helper, producing “没有得到管理员权限，已拒绝执行”.

@@ -11,6 +11,7 @@ using NetworkAccessManager.App.Services;
 using NetworkAccessManager.App.ViewModels;
 using NetworkAccessManager.Core.Diagnostics;
 using NetworkAccessManager.Core.Models;
+using NetworkAccessManager.Core.Network;
 using NetworkAccessManager.Core.Operations;
 using NetworkAccessManager.Core.Persistence;
 using NetworkAccessManager.Core.Security;
@@ -46,6 +47,9 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private bool _initialized;
     private bool _loggedStartupSummary;
     private bool _isRefreshing;
+    private IReadOnlyList<EthernetAdapterInfo> _ethernetAdapters = Array.Empty<EthernetAdapterInfo>();
+    private IReadOnlyList<EthernetAdapterRecord> _ethernetDisabledRecords = Array.Empty<EthernetAdapterRecord>();
+    private bool _isEthernetDisabledByTool;
     private bool _isBusyOperation;
 
     private IReadOnlyList<ProcessRowViewModel> _selectedApp = Array.Empty<ProcessRowViewModel>();
@@ -176,6 +180,36 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     public string VersionText { get; }
     public string DataDirectory { get; }
     public string LogDirectory { get; }
+    public IReadOnlyList<EthernetAdapterInfo> EthernetAdapters => _ethernetAdapters;
+    public IReadOnlyList<EthernetAdapterRecord> EthernetDisabledRecords => _ethernetDisabledRecords;
+    public bool IsEthernetDisabledByTool => _isEthernetDisabledByTool;
+    public bool CanToggleEthernet => IsEthernetDisabledByTool || _ethernetAdapters.Count > 0;
+    public string EthernetToggleText => IsEthernetDisabledByTool ? "恢复网络" : "禁用网络";
+    public string EthernetStatusText
+    {
+        get
+        {
+            if (IsEthernetDisabledByTool) return "以太网：已由本工具禁用";
+            if (_ethernetAdapters.Count == 0) return "以太网：未发现物理适配器";
+            return _ethernetAdapters.Any(a => a.StatusText == "已连接")
+                ? "以太网：已连接"
+                : "以太网：未连接";
+        }
+    }
+
+    public string EthernetDetailText
+    {
+        get
+        {
+            if (IsEthernetDisabledByTool)
+                return "以下以太网适配器由本工具禁用：" + string.Join("、", _ethernetDisabledRecords.Select(a => a.Name)) +
+                       "。点击“恢复网络”重新启用。";
+            if (_ethernetAdapters.Count == 0)
+                return "未发现物理以太网适配器；无线、VPN 和虚拟网卡不会被此功能处理。";
+            return "物理以太网适配器：" + string.Join("、", _ethernetAdapters.Select(a => $"{a.Name}（{a.StatusText}）")) +
+                   "。禁用会立即中断网络，远程连接将无法恢复。";
+        }
+    }
     public string CurrentUserText { get; }
     public bool IsElevated { get; }
     public string PrivilegeStatusText { get; }
@@ -865,6 +899,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         if (IsFilterActive(_connectionSearch, _connectionFilterKey)) ConnectionView.Refresh();
 
         UpdatePaneCounts();
+        UpdateEthernetState(snapshot);
         UpdateFirewallHeader(snapshot);
         UpdateWarningBar(snapshot);
         UpdatePendingTasks(snapshot.State);
@@ -914,9 +949,24 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         ConnectionVisibleText = $"显示 {ConnectionView.Cast<object>().Count()} / {Connections.Count}";
     }
 
-    private void UpdateFirewallHeader(UiMonitorSnapshot snapshot)
+    private void UpdateEthernetState(UiMonitorSnapshot snapshot)
     {
-        var availability = snapshot.FirewallAvailability;
+        _ethernetAdapters = snapshot.EthernetAdapters;
+        _ethernetDisabledRecords = snapshot.State.Ethernet?.DisabledAdapters?.ToList()
+                                   ?? new List<EthernetAdapterRecord>();
+        _isEthernetDisabledByTool =
+            snapshot.State.Ethernet?.IsDisabledByTool == true && _ethernetDisabledRecords.Count > 0;
+        OnPropertyChanged(nameof(EthernetAdapters));
+        OnPropertyChanged(nameof(EthernetDisabledRecords));
+        OnPropertyChanged(nameof(IsEthernetDisabledByTool));
+        OnPropertyChanged(nameof(CanToggleEthernet));
+        OnPropertyChanged(nameof(EthernetToggleText));
+        OnPropertyChanged(nameof(EthernetStatusText));
+        OnPropertyChanged(nameof(EthernetDetailText));
+    }
+
+    private void UpdateFirewallHeader(UiMonitorSnapshot snapshot)
+    {        var availability = snapshot.FirewallAvailability;
         FirewallError = availability.Error;
         var ruleCount = snapshot.State.Rules.Count(r => r.Status == ManagedRuleStatus.Active);
         var prefixCount = availability.ManagedRuleCount ?? ruleCount;

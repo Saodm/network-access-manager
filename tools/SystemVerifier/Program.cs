@@ -3,6 +3,7 @@ using System.Text;
 using NetworkAccessManager.Core.Diagnostics;
 using NetworkAccessManager.Core.Firewall;
 using NetworkAccessManager.Core.Models;
+using NetworkAccessManager.Core.Network;
 using NetworkAccessManager.Core.Operations;
 using NetworkAccessManager.Core.Persistence;
 using NetworkAccessManager.Core.Scheduling;
@@ -28,6 +29,30 @@ void W(string line)
 {
     Console.WriteLine(line);
     output.AppendLine(line);
+}
+
+if (args.Contains("--network-inspect", StringComparer.OrdinalIgnoreCase))
+{
+    try
+    {
+        var controller = new WindowsEthernetController();
+        W($"NETWORK_IS_ADMIN={WindowsPrivilege.IsAdministrator()}");
+        foreach (var adapter in controller.Inspect())
+            W($"ADAPTER id={adapter.Id} name={adapter.Name} desc={adapter.Description} status={adapter.StatusText} admin={adapter.AdminEnabled} mac={adapter.MacAddress}");
+        W("NETWORK_INSPECT=PASS");
+        passed = true;
+    }
+    catch (Exception ex)
+    {
+        W("NETWORK_INSPECT_FAIL " + ex);
+        passed = false;
+    }
+    try
+    {
+        File.WriteAllText(Path.Combine(dataDirectory, "verifier-output.txt"), output.ToString(), new UTF8Encoding(false));
+    }
+    catch { }
+    return passed ? 0 : 1;
 }
 
 try
